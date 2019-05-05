@@ -18,6 +18,7 @@ pip install subproc
 ## Requirements
 
 I tried to depend only on the Python Stdlib and be backwards compatible to 2.7.
+Tested only on unix-like systems :(
 
 ## Example
 
