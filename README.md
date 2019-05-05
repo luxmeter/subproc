@@ -7,7 +7,7 @@ Provides utility functions around subprocess module.
 I guess everyone has its own set of utility methods, especially around the subprocess module.
 This is my version :)
 
-## Installation
+## Installation (not yet released)
 
 Install the app (preferred in a [virtual environment](https://realpython.com/python-virtual-environments-a-primer/)):
 
