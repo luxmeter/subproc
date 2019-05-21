@@ -39,8 +39,5 @@ install: ## Install project and its dependencies
 	@poetry install
 
 publish: build ## Deploy distribution package
-	@poetry publish -r sctools
+	@poetry publish
 
-# Example: make update-protobuf proto_src_dir=/Users/caylak/sharedcloud/AclService/modules/api/src/main/proto python_out_dir=./aclproto/proto/
-update-protobuf: guard-proto_src_dir guard-python_out_dir ## Update Protobuf python bindings
-	@protoc --proto_path=$(proto_src_dir) --python_out=$(python_out_dir) $(proto_src_dir)/*.proto

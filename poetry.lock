@@ -66,7 +66,15 @@ description = "plugin and hook calling mechanisms for python"
 name = "pluggy"
 optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
-version = "0.9.0"
+version = "0.11.0"
+
+[[package]]
+category = "dev"
+description = "Cross-platform lib for process and system monitoring in Python."
+name = "psutil"
+optional = false
+python-versions = ">=2.6, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
+version = "5.6.2"
 
 [[package]]
 category = "dev"
@@ -82,16 +90,17 @@ description = "pytest: simple powerful testing with Python"
 name = "pytest"
 optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
-version = "4.4.1"
+version = "4.5.0"
 
 [package.dependencies]
 atomicwrites = ">=1.0"
 attrs = ">=17.4.0"
 colorama = "*"
-pluggy = ">=0.9"
+pluggy = ">=0.9,<0.10 || >0.10,<1.0"
 py = ">=1.5.0"
 setuptools = "*"
 six = ">=1.10.0"
+wcwidth = "*"
 
 [[package.dependencies.more-itertools]]
 python = "<2.8"
@@ -126,8 +135,16 @@ optional = false
 python-versions = ">=2.6, !=3.0.*, !=3.1.*"
 version = "1.12.0"
 
+[[package]]
+category = "dev"
+description = "Measures number of Terminal column cells of wide-character codes"
+name = "wcwidth"
+optional = false
+python-versions = "*"
+version = "0.1.7"
+
 [metadata]
-content-hash = "e17a1dc8a4862697b12baaa8c13bafb376d7083ed3d6d5202aa47410e8954664"
+content-hash = "6a362f38b0a9ffc754c4c6dadda9e33e3a80260e8fae412c88dea79e6681967a"
 python-versions = "^2.7"
 
 [metadata.hashes]
@@ -137,8 +154,10 @@ colorama = ["05eed71e2e327246ad6b38c540c4a3117230b19679b875190486ddd2d721422d", 
 funcsigs = ["330cc27ccbf7f1e992e69fef78261dc7c6569012cf397db8d3de0234e6c937ca", "a7bb0f2cf3a3fd1ab2732cb49eba4252c2af4240442415b4abce3b87022a8f50"]
 more-itertools = ["38a936c0a6d98a38bcc2d03fdaaedaba9f412879461dd2ceff8d37564d6522e4", "c0a5785b1109a6bd7fac76d6837fd1feca158e54e521ccd2ae8bfe393cc9d4fc", "fe7a7cae1ccb57d33952113ff4fa1bc5f879963600ed74918f1236e212ee50b9"]
 pathlib2 = ["25199318e8cc3c25dcb45cbe084cc061051336d5a9ea2a12448d3d8cb748f742", "5887121d7f7df3603bca2f710e7219f3eca0eb69e0b7cc6e0a022e155ac931a7"]
-pluggy = ["19ecf9ce9db2fce065a7a0586e07cfb4ac8614fe96edf628a264b1c70116cf8f", "84d306a647cc805219916e62aab89caa97a33a1dd8c342e87a37f91073cd4746"]
+pluggy = ["25a1bc1d148c9a640211872b4ff859878d422bccb59c9965e04eed468a0aa180", "964cedd2b27c492fbf0b7f58b3284a09cf7f99b0f715941fb24a439b3af1bd1a"]
+psutil = ["206eb909aa8878101d0eca07f4b31889c748f34ed6820a12eb3168c7aa17478e", "649f7ffc02114dced8fbd08afcd021af75f5f5b2311bc0e69e53e8f100fe296f", "6ebf2b9c996bb8c7198b385bade468ac8068ad8b78c54a58ff288cd5f61992c7", "753c5988edc07da00dafd6d3d279d41f98c62cd4d3a548c4d05741a023b0c2e7", "76fb0956d6d50e68e3f22e7cc983acf4e243dc0fcc32fd693d398cb21c928802", "828e1c3ca6756c54ac00f1427fdac8b12e21b8a068c3bb9b631a1734cada25ed", "a4c62319ec6bf2b3570487dd72d471307ae5495ce3802c1be81b8a22e438b4bc", "acba1df9da3983ec3c9c963adaaf530fcb4be0cd400a8294f1ecc2db56499ddd", "ef342cb7d9b60e6100364f50c57fa3a77d02ff8665d5b956746ac01901247ac4"]
 py = ["64f65755aee5b381cea27766a3a147c3f15b9b6b9ac88676de66ba2ae36793fa", "dc639b046a6e2cff5bbe40194ad65936d6ba360b52b3c3fe1d08a82dd50b5e53"]
-pytest = ["3773f4c235918987d51daf1db66d51c99fac654c81d6f2f709a046ab446d5e5d", "b7802283b70ca24d7119b32915efa7c409982f59913c1a6c0640aacf118b95f5"]
+pytest = ["1a8aa4fa958f8f451ac5441f3ac130d9fc86ea38780dd2715e6d5c5882700b24", "b8bf138592384bd4e87338cb0f256bf5f615398a649d4bd83915f0e4047a5ca6"]
 scandir = ["2586c94e907d99617887daed6c1d102b5ca28f1085f90446554abf1faf73123e", "2ae41f43797ca0c11591c0c35f2f5875fa99f8797cb1a1fd440497ec0ae4b022", "2b8e3888b11abb2217a32af0766bc06b65cc4a928d8727828ee68af5a967fa6f", "2c712840c2e2ee8dfaf36034080108d30060d759c7b73a01a52251cc8989f11f", "4d4631f6062e658e9007ab3149a9b914f3548cb38bfb021c64f39a025ce578ae", "67f15b6f83e6507fdc6fca22fedf6ef8b334b399ca27c6b568cbfaa82a364173", "7d2d7a06a252764061a020407b997dd036f7bd6a175a5ba2b345f0a357f0b3f4", "8c5922863e44ffc00c5c693190648daa6d15e7c1207ed02d6f46a8dcc2869d32", "92c85ac42f41ffdc35b6da57ed991575bdbe69db895507af88b9f499b701c188", "b24086f2375c4a094a6b51e78b4cf7ca16c721dcee2eddd7aa6494b42d6d519d", "cb925555f43060a1745d0a321cca94bcea927c50114b623d73179189a4e100ac"]
 six = ["3350809f0555b11f552448330d0b52d5f24c91a322ea4a15ef22629740f3761c", "d16a0141ec1a18405cd4ce8b4613101da75da0e9a7aec5bdd4fa804d0e0eba73"]
+wcwidth = ["3df37372226d6e63e1b1e1eda15c594bca98a22d33a23832a90998faa96bc65e", "f4ebe71925af7b40a864553f761ed559b43544f8f71746c2d756c7fe788ade7c"]
