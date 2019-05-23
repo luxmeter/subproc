@@ -20,6 +20,9 @@ clean-pyc:
 	@find . -name '*.pyc' -exec rm -f {} +
 	@find . -name '*.pyo' -exec rm -f {} +
 	@find . -name '*~' -exec rm -f  {} +
+	@find . -name '*.egg-info' -exec rm -rf  {} +
+	@find . -name 'pip-wheel-metadata' -exec rm -rf  {} +
+
 
 clean-build:
 	@rm -f -r build/
@@ -32,7 +35,7 @@ clean: clean-pyc clean-build ## Clear all
 test: clean-pyc ## Run tests
 	@pytest -v -s
 
-build: ## Build project
+build: test ## Build project
 	@poetry build
 
 install: ## Install project and its dependencies
@@ -40,4 +43,9 @@ install: ## Install project and its dependencies
 
 publish: build ## Deploy distribution package
 	@poetry publish
+	# @twine upload dist/*
+
+publish-test: build ## Deploy distribution package to PyPi-Test
+	@poetry publish --repository testpypi
+	# @twine upload --repository testpypi dist/*
 

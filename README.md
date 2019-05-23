@@ -12,7 +12,7 @@ This is my version :)
 Install the app (preferred in a [virtual environment](https://realpython.com/python-virtual-environments-a-primer/)):
 
 ```bash
-pip install subproc
+pip install subproc==0.0.1.dev1
 ```
 
 ## Requirements
@@ -20,7 +20,7 @@ pip install subproc
 I tried to depend only on the Python Stdlib and be backwards compatible to 2.7.
 Tested only on unix-like systems :(
 
-## Example
+## Examples
 
 Run a command and capture its stdout as well as stderr output:
 
@@ -59,10 +59,11 @@ with open('temp.log', 'r') as f:
 
 ## Advanced Examples
 
-All methods provided by this module also allow you to define a timeout 
+All methods provided by this module also allow you to define a timeout
 as well as a formatter for the line to be printed.
 
 Define a timeout:
+
 ```python
 from subproc import run
 from multiprocessing import TimeoutError
@@ -74,6 +75,7 @@ except TimeoutError:
 ```
 
 Define a formatter:
+
 ```python
 from subproc import run
 
