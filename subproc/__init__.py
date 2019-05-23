@@ -1,4 +1,3 @@
-from subproc import run
-from writer import padded_writer
+from subproc import run, run_cmds, run_cmds_redirected, run_redirected
 
-__all__ = ['run', 'padded_writer']
+__all__ = ['run', 'run_cmds', 'run_redirected', 'run_cmds_redirected']

@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 
+SOURCE="${BASH_SOURCE[0]}"
+DIR="$(dirname "$SOURCE")"
+
 task() {
     while true; do
         echo "hello world"
@@ -13,7 +16,7 @@ main() {
     fi
     task&
     local pid=$!
-    echo $pid > task.pid
+    echo $pid > "$DIR/task.pid"
 }
 
 main

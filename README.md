@@ -22,35 +22,61 @@ Tested only on unix-like systems :(
 
 ## Example
 
-Below is a super artifical code example with its output.
-Assuming the snippet is saved to Python script named `example.py` in the current directory, following happens:
-
-- Examing all lines of the script containg an `if`-string (`cat example.py | grep if`)
-- Redirect output, line by line, to a writer `padded_writer` (if omitted `sys.stdout.write` is used by default)
-- `padded_writer` is a proxy-decorator that adds a left-hand side padding to each line
-- By default `padded_writer` redirects the output to `sys.stdout.write` but you can also define another writer (e.g. write method of a `StringIO` instance)
-- Here `csvwriter` is writes the to `stdout` and `test.csv`
-  - Before that lines are discarded that don't contain the string `csv:`
-  - Before writing to `test.csv` the line is trimmed since it comes from the `padded_writer`
-- Result is a list of tuples containg the status code to a command
+Run a command and capture its stdout as well as stderr output:
 
 ```python
-from subproc import run, padded_writer
+from subproc import run
 
-with open('test.csv', 'w') as csv:
-    def csvwriter(line):
-        if 'csv:' in line:
-            csv.write(line.lstrip().replace('csv:', ''))
-            sys.stdout.write(line)
-    print('Running command:')
-    result = run(['cat example.py', 'grep if'], writer=padded_writer(csvwriter))
-    print(result)
+r = run('echo hello world')
+assert r.return_code == 0
+assert r.stdout == 'hello world\n'
+assert r.stderr == ''
+assert r.pid == 0
 ```
 
-**Output**
+Run multiple piped commands and capture its stdout as well as stderr output:
 
+```python
+from subproc import run_cmds
+
+r = run_cmds(['echo "hello world"', 'sed "s/hello/bye/g"'])
+assert r.stdout == "bye world\n"
+assert all([info.return_code == 0 for info in r.infos])
 ```
-Running command:
-  if 'csv:' in line:
-[('cat ./proc.py', 0), ('grep if', 0)]
+
+Run a command and redirect its stdout output to a file
+
+```python
+from subproc import run_redirected
+
+with open('temp.log', 'w') as f:
+    r = run_redirected('echo hello world', out=f)
+    assert r.return_code == 0
+with open('temp.log', 'r') as f:
+    content = f.readlines()[0]
+    assert content == "hello world\n"
+```
+
+## Advanced Examples
+
+All methods provided by this module also allow you to define a timeout 
+as well as a formatter for the line to be printed.
+
+Define a timeout:
+```python
+from subproc import run
+from multiprocessing import TimeoutError
+
+try:
+    r = run('ping localhost', timeoutsec=0.5)
+except TimeoutError:
+    pass
+```
+
+Define a formatter:
+```python
+from subproc import run
+
+r = run('echo hello world', formatter=str.upper)
+assert r.stdout == "HELLO WORLD\n"
 ```
