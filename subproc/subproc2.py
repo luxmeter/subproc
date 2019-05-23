@@ -10,6 +10,12 @@ import signal
 import subprocess
 import threading
 from collections import namedtuple
+
+try:
+    from itertools import izip
+except ImportError:
+    from itertools import zip as izip
+
 from multiprocessing import TimeoutError
 
 try:
@@ -20,7 +26,11 @@ except ImportError:
 logger = logging.getLogger(os.path.basename(__file__.replace('.py', '')))
 
 RunResult = namedtuple('RunResult', ['pid', 'return_code', 'stdout', 'stderr'])
-RedirectedRunResult = namedtuple('RedirectedRunResult', ['pid', 'return_code'])
+RunRedirectedResult = namedtuple('RunRedirectedResult', ['pid', 'return_code'])
+
+Info = namedtuple('Pid', ['cmd', 'pid', 'return_code'])
+RunCmdsResult = namedtuple('RunCmdsResult', ['infos', 'stdout', 'stderr'])
+RunCmdsRedirectedResult = namedtuple('RunCmdsRedirectedResult', ['info'])
 
 
 def run(cmd, timeoutsec=None, formatter=None):
@@ -58,7 +68,7 @@ def run_redirected(cmd, out=None, err=None, timeoutsec=None, formatter=None):
     :param err: file-like object to write the stderr to (default sys.stderr)
     :param timeoutsec: interrupts the process after the timeout (in seconds)
     :param formatter: function accepting and returning the line to print
-    :return: :py:class:`RedirectedRunResult`
+    :return: :py:class:`RunRedirectedResult`
 
     Example::
 
@@ -67,6 +77,40 @@ def run_redirected(cmd, out=None, err=None, timeoutsec=None, formatter=None):
             assert r.return_code == 0
     """
 
+    p = pipe_processes([cmd], out, err)[0]
+    consume_pipes([p], out, err, timeoutsec, formatter)
+
+    # pull return code
+    p.wait()
+
+    return RunRedirectedResult(p.pid, p.returncode)
+
+
+def run_cmds(cmds, timeoutsec=None, formatter=None):
+    out = StringIO()
+    err = StringIO()
+    results = run_cmds_redirected(cmds, out=out, err=err, timeoutsec=timeoutsec, formatter=formatter)
+    return RunCmdsResult([r.info for r in results], out.getvalue(), err.getvalue())
+
+
+def run_cmds_redirected(cmds, out=None, err=None, timeoutsec=None, formatter=None):
+    if not cmds:
+        return ValueError('No commands defined')
+
+    processes = pipe_processes(cmds, out, err)
+    consume_pipes(processes, out, err, timeoutsec, formatter)
+
+    # pull return code
+    for p in processes:
+        # close pipe otherwise we might run into a dead lock, e.g.
+        # when a pipe consuming process stops reading (BrokenPipeError)
+        close_pipes(p, out, err)
+        p.wait()
+
+    return [RunCmdsRedirectedResult(info=Info(cmd, p.pid, p.returncode)) for cmd, p in izip(cmds, processes)]
+
+
+def consume_pipes(processes, out, err, timeoutsec, formatter):
     def write(input, output):
         logging.debug('Thread started to read from pipe')
         for line in iter(input.readline, ''):
@@ -74,24 +118,7 @@ def run_redirected(cmd, out=None, err=None, timeoutsec=None, formatter=None):
             output.write(formatted_line)
         logging.debug('Thread stopped')
 
-    def close_pipes():
-        if not p:
-            return
-        if out:
-            p.stdout.close()
-        if err:
-            p.stderr.close()
-
-    p = None
-    try:
-        p = subprocess.Popen(shlex.split(cmd), **(process_params(out, err)))
-    # catch errors when creating process (e.g. if command was not found)
-    except OSError as e:
-        # prevents deadlocks
-        logging.error('Closing pipes due to unexpected error: %s', e)
-        close_pipes()
-        raise e
-
+    p = processes[-1]
     try:
         # start consuming pipes
         threads = []
@@ -113,16 +140,12 @@ def run_redirected(cmd, out=None, err=None, timeoutsec=None, formatter=None):
             raise TimeoutError
     except TimeoutError as e:
         logging.warn('Terminating process due to timeout')
-        if os.name == 'posix':
-            os.killpg(p.pid, signal.SIGTERM)
-        elif os.name == 'nt':
-            os.kill(p.pid, signal.CTRL_C_EVENT)
+        for p in processes:
+            if os.name == 'posix':
+                os.killpg(p.pid, signal.SIGTERM)
+            elif os.name == 'nt':
+                os.kill(p.pid, signal.CTRL_C_EVENT)
         raise e
-
-    # pull return code
-    p.wait()
-
-    return RedirectedRunResult(p.pid, p.returncode)
 
 
 def process_params(out, err):
@@ -144,3 +167,33 @@ def process_params(out, err):
         logging.debug('Setting up pipe for STDERR')
         params['stderr'] = subprocess.PIPE
     return params
+
+
+def close_pipes(p, out, err):
+    if not p:
+        return
+    if out:
+        p.stdout.close()
+    if err:
+        p.stderr.close()
+
+
+def pipe_processes(cmds, out, err):
+    processes = []
+    try:
+        cmd = "".join(cmds[-1:])
+        params = process_params(out, err)
+        if cmds[:-1]:
+            processes = list(pipe_processes(cmds[:-1], out, err))
+            logger.debug("Running cmd {}: {}".format(len(cmds), cmd))
+            processes.append(subprocess.Popen(shlex.split(cmd), stdin=processes[-1].stdout, **params))
+        else:
+            logger.debug("Running cmd {}: {}".format(len(cmds), cmd))
+            processes.append(subprocess.Popen(shlex.split(cmd), **params))
+        return processes
+    # catch errors when creating process (e.g. if command was not found)
+    except OSError as e:
+        logger.error("Running last cmd failed: {}".format(str(e)))
+        for p in processes:
+            close_pipes(p)
+        raise e

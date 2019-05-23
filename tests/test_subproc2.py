@@ -2,6 +2,7 @@ import logging
 import os
 import time
 from multiprocessing import TimeoutError
+from textwrap import dedent
 
 import psutil
 import pytest
@@ -85,3 +86,19 @@ def test_file_redirection():
     with open('tmpfile', 'r') as f:
         content = f.readlines()[0]
         assert content == "hello world\n", 'Unexpected file content'
+
+
+def test_run_multiple_commands():
+    result = subproc2.run_cmds(['echo "hello world"', 'sed "s/hello/bye/g"'])
+    assert result.stdout == "bye world\n"
+    assert all([info.return_code == 0 for info in result.infos])
+
+
+def test_broken_pipe():
+    expected = dedent("""\
+    read: hello world: 1
+    read: hello world: 2
+    """)
+    # producer prints a line each 0.5s and consumer stop suddenly after receiving the 2nd.
+    results = subproc2.run_cmds(['python producer.py', 'python consumer.py'])
+    assert results.stdout == expected
