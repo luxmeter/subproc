@@ -1,6 +1,5 @@
 import os
 import time
-from multiprocessing import TimeoutError
 from textwrap import dedent
 
 import psutil
@@ -42,9 +41,9 @@ def test_consumes_pipe_correctly():
 
 
 def test_timeout():
-    with pytest.raises(TimeoutError):
-        r = subproc.run('ping localhost', timeoutsec=0.5)
-        assert r.return_code == 0, 'Unexpected status code'
+    r = subproc.run('ping localhost', timeoutsec=0.5)
+    assert r.return_code != 0, 'Unexpected status code'
+    assert 'localhost' in r.stdout, 'Unexpected output for stdout'
 
 
 def test_os_error():
@@ -53,9 +52,8 @@ def test_os_error():
 
 
 def test_child_procs_are_killed():
-    with pytest.raises(TimeoutError):
-        script = os.path.join(WD, 'scripts', 'background_task.sh')
-        subproc.run('bash ' + script, timeoutsec=0.5)
+    script = os.path.join(WD, 'scripts', 'background_task.sh')
+    r = subproc.run('bash ' + script, timeoutsec=0.5)
     with open(os.path.join(WD, 'scripts', 'task.pid')) as f:
         pid = int(f.readlines()[0].strip())
         time.sleep(0.5)

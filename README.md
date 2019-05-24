@@ -7,12 +7,12 @@ Provides utility functions around subprocess module.
 I guess everyone has its own set of utility methods, especially around the subprocess module.
 This is my version :)
 
-## Installation (not yet released)
+## Installation
 
 Install the app (preferred in a [virtual environment](https://realpython.com/python-virtual-environments-a-primer/)):
 
 ```bash
-pip install subproc==0.0.1.dev1
+pip install --pre subproc==0.0.1.dev4
 ```
 
 ## Requirements
@@ -66,12 +66,9 @@ Define a timeout:
 
 ```python
 from subproc import run
-from multiprocessing import TimeoutError
 
-try:
-    r = run('ping localhost', timeoutsec=0.5)
-except TimeoutError:
-    pass
+r = run('ping localhost', timeoutsec=0.5)
+assert 'localhost' in r.stdout
 ```
 
 Define a formatter:

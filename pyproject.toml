@@ -1,12 +1,12 @@
 [tool.poetry]
 name = "subproc"
-version = "0.0.1.dev1"
+version = "0.0.1.dev4"
 description = "Provides utility functions around subprocess module."
 authors = ["Mustafa Caylak <mustafa.caylak@web.de>"]
 license = "Apache-2.0"
 
 [tool.poetry.dependencies]
-python = "^2.7"
+python = "*"
 
 [tool.poetry.dev-dependencies]
 pytest = "^4.4"

@@ -10,13 +10,13 @@ import signal
 import subprocess
 import threading
 from collections import namedtuple
+from multiprocessing import TimeoutError
 
 try:
     from itertools import izip
 except ImportError:
-    from itertools import zip as izip
+    izip = zip
 
-from multiprocessing import TimeoutError
 
 try:
     from StringIO import StringIO
@@ -185,7 +185,6 @@ def consume_pipes(processes, out, err, timeoutsec, formatter):
                 os.killpg(p.pid, signal.SIGTERM)
             elif os.name == 'nt':
                 os.kill(p.pid, signal.CTRL_C_EVENT)
-        raise e
 
 
 def process_params(out, err):
