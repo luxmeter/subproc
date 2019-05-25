@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "subproc"
-version = "0.0.1.dev5"
+version = "0.0.1.dev7"
 description = "Provides utility functions around subprocess module."
 authors = ["Mustafa Caylak <mustafa.caylak@web.de>"]
 license = "Apache-2.0"

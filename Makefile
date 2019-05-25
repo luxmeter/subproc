@@ -42,7 +42,7 @@ install: ## Install project and its dependencies
 	@poetry install
 
 publish: build ## Deploy distribution package
-	@poetry publish
+	@poetry publish --repository pypi
 	# @twine upload dist/*
 
 publish-test: build ## Deploy distribution package to PyPi-Test
