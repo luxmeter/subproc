@@ -12,7 +12,7 @@ This is my version :)
 Install the app (preferred in a [virtual environment](https://realpython.com/python-virtual-environments-a-primer/)):
 
 ```bash
-pip install --pre subproc==0.0.1.dev4
+pip install --pre subproc==0.0.1.dev5
 ```
 
 ## Requirements

@@ -8,6 +8,7 @@ import os
 import shlex
 import signal
 import subprocess
+import sys
 import threading
 from collections import namedtuple
 from multiprocessing import TimeoutError
@@ -28,7 +29,7 @@ logger = logging.getLogger(os.path.basename(__file__.replace('.py', '')))
 RunResult = namedtuple('RunResult', ['pid', 'return_code', 'stdout', 'stderr'])
 RunRedirectedResult = namedtuple('RunRedirectedResult', ['pid', 'return_code'])
 
-Info = namedtuple('Pid', ['cmd', 'pid', 'return_code'])
+Info = namedtuple('Info', ['cmd', 'pid', 'return_code'])
 RunCmdsResult = namedtuple('RunCmdsResult', ['infos', 'stdout', 'stderr'])
 RunCmdsRedirectedResult = namedtuple('RunCmdsRedirectedResult', ['info'])
 
@@ -56,7 +57,7 @@ def run(cmd, timeoutsec=None, formatter=None):
     return RunResult(result.pid, result.return_code, out.getvalue(), err.getvalue())
 
 
-def run_redirected(cmd, out=None, err=None, timeoutsec=None, formatter=None):
+def run_redirected(cmd, out=sys.stdout, err=sys.stderr, timeoutsec=None, formatter=None):
     """\
     Executes the given command and redirects its output if applicable.
 
@@ -77,7 +78,7 @@ def run_redirected(cmd, out=None, err=None, timeoutsec=None, formatter=None):
             assert r.return_code == 0
     """
 
-    p = pipe_processes([cmd], out, err)[0]
+    p = pipe_processes([cmd])[0]
     consume_pipes([p], out, err, timeoutsec, formatter)
 
     # pull return code
@@ -113,7 +114,7 @@ def run_cmds(cmds, timeoutsec=None, formatter=None):
     return RunCmdsResult([r.info for r in results], out.getvalue(), err.getvalue())
 
 
-def run_cmds_redirected(cmds, out=None, err=None, timeoutsec=None, formatter=None):
+def run_cmds_redirected(cmds, out=sys.stdout, err=sys.stderr, timeoutsec=None, formatter=None):
     """\
     Executes the given commands by piping them together.
     Output is redirected if applicable.
@@ -122,8 +123,8 @@ def run_cmds_redirected(cmds, out=None, err=None, timeoutsec=None, formatter=Non
     In case of a timeout, the processes and its child processes are terminated.
 
     :param cmds: the commands to execute
-    :param out: file-like object to write the stdout to (default sys.stdout)
-    :param err: file-like object to write the stderr to (default sys.stderr)
+    :param out: file-like object to write the stdout to (default sys.stdout, None -> os.devnull)
+    :param err: file-like object to write the stderr to (default sys.stderr, None -> os.devnull)
     :param timeoutsec: interrupts the processes after the timeout (in seconds)
     :param formatter: function accepting and returning the line to print
     :return: :py:class:`RunCmdsRedirected`
@@ -137,36 +138,37 @@ def run_cmds_redirected(cmds, out=None, err=None, timeoutsec=None, formatter=Non
     if not cmds:
         return ValueError('No commands defined')
 
-    processes = pipe_processes(cmds, out, err)
+    out = open(os.devnull, 'w') if not out else out
+    err = open(os.devnull, 'w') if not err else err
+
+    processes = pipe_processes(cmds)
     consume_pipes(processes, out, err, timeoutsec, formatter)
 
     # pull return code
-    for p in processes:
-        # close pipe otherwise we might run into a dead lock, e.g.
-        # when a pipe consuming process stops reading (BrokenPipeError)
-        close_pipes(p, out, err)
+    for cmd, p in izip(cmds, processes):
         p.wait()
+        logger.debug("Command '{}' completed".format(cmd))
 
     return [RunCmdsRedirectedResult(info=Info(cmd, p.pid, p.returncode)) for cmd, p in izip(cmds, processes)]
 
 
 def consume_pipes(processes, out, err, timeoutsec, formatter):
     def write(input, output):
-        logging.debug('Thread started to read from pipe')
+        logger.debug('Started pipe consuming thread')
         for line in iter(input.readline, ''):
             formatted_line = formatter(line) if formatter else line
             output.write(formatted_line)
-        logging.debug('Thread stopped')
+        logger.debug('Thread stopped')
 
     p = processes[-1]
+    threads = []
     try:
         # start consuming pipes
-        threads = []
-        if out or formatter:
+        if out:
             t = threading.Thread(target=write, args=(p.stdout, out))
             t.daemon = True
             threads.append(t)
-        if err or formatter:
+        if err:
             t = threading.Thread(target=write, args=(p.stderr, err))
             t.daemon = True
             threads.append(t)
@@ -178,16 +180,25 @@ def consume_pipes(processes, out, err, timeoutsec, formatter):
             t.join(timeout=timeoutsec)
         if any((t.is_alive() for t in threads)):
             raise TimeoutError
-    except TimeoutError as e:
+    except TimeoutError:
         logging.warn('Terminating process due to timeout')
         for p in processes:
             if os.name == 'posix':
                 os.killpg(p.pid, signal.SIGTERM)
             elif os.name == 'nt':
                 os.kill(p.pid, signal.CTRL_C_EVENT)
+    finally:
+        # process might have been killed so wait until threads are shut down otherwise
+        # -> IOError: close() called during concurrent operation on the same file object
+        for t in threads:
+            t.join()
+        for p in processes:
+            # close pipe otherwise we might run into a dead lock, e.g.
+            # when a pipe consuming process stops reading (BrokenPipeError)
+            close_pipes(p)
 
 
-def process_params(out, err):
+def process_params():
     params = {
         'universal_newlines': True,
     }
@@ -199,36 +210,32 @@ def process_params(out, err):
     # notice that the pipes needs to be consumed
     # otherwise this python process will block
     # when the pipe reaches its capacity limit (on linux 16 pages = 65,536 bytes)
-    if out:
-        logging.debug('Setting up pipe for STDOUT')
-        params['stdout'] = subprocess.PIPE
-    if err:
-        logging.debug('Setting up pipe for STDERR')
-        params['stderr'] = subprocess.PIPE
+    params['stdout'] = subprocess.PIPE
+    params['stderr'] = subprocess.PIPE
     return params
 
 
-def close_pipes(p, out, err):
+def close_pipes(p):
     if not p:
         return
-    if out:
+    if p.stdout:
         p.stdout.close()
-    if err:
+    if p.stderr:
         p.stderr.close()
 
 
-def pipe_processes(cmds, out, err):
+def pipe_processes(cmds):
     processes = []
     try:
         cmd = "".join(cmds[-1:])
-        params = process_params(out, err)
+        params = process_params()
         if cmds[:-1]:
-            processes = list(pipe_processes(cmds[:-1], out, err))
+            processes = list(pipe_processes(cmds[:-1]))
             logger.debug("Running cmd {}: {}".format(len(cmds), cmd))
-            processes.append(subprocess.Popen(shlex.split(cmd), stdin=processes[-1].stdout, **params))
+            processes.append(subprocess.Popen(shlex.split(cmd), close_fds=True, stdin=processes[-1].stdout, **params))
         else:
             logger.debug("Running cmd {}: {}".format(len(cmds), cmd))
-            processes.append(subprocess.Popen(shlex.split(cmd), **params))
+            processes.append(subprocess.Popen(shlex.split(cmd), close_fds=True, **params))
         return processes
     # catch errors when creating process (e.g. if command was not found)
     except OSError as e:

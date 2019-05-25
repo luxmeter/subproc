@@ -82,6 +82,21 @@ def test_piped_cmds():
     assert all([info.return_code == 0 for info in result.infos]), 'Unexpected return code(s)'
 
 
+def test_piped_command_close_pipe_on_err():
+    with pytest.raises(OSError):
+        subproc.run_cmds_redirected(['echo "hello world"', '"s/hello/bye/g"'])
+
+
+def test_redirect_to_devnull():
+    input = os.path.join(WD, 'scripts', 'content_pipe_sized.txt')
+    output = os.path.join(WD, 'scripts', 'test_redirect_to_devnull.txt')
+    results = subproc.run_cmds_redirected(['cat  ' + input, 'tee ' + output], out=None, err=None)
+    assert all([result.info.return_code == 0 for result in results]), 'Unexpected return code(s)'
+    assert os.path.exists(output), 'Ouput file was not generated'
+    with open(output, 'r') as f:
+        assert f.readlines(), 'Output file has not content'
+
+
 def test_broken_pipe():
     expected = dedent("""\
     read: hello world: 1
