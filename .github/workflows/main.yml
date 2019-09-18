@@ -15,5 +15,5 @@ jobs:
       run: make install
     - name: change to virtual env
       run: poetry shell
-    - name: clean build
-      run: make clean build
+    - name: run tests
+      run: poetry run pytest
