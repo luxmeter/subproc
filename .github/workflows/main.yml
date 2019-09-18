@@ -13,5 +13,7 @@ jobs:
     - uses: dschep/install-poetry-action@v1.2    
     - name: install dependencies
       run: make install
+    - name: change to virtual env
+      run: poetry shell
     - name: clean build
       run: make clean build
