@@ -9,5 +9,7 @@ jobs:
     
     steps:
     - uses: actions/checkout@v1
-    - name: Run a one-line script
+    - uses: actions/setup-python@v1
+    - uses: dschep/install-poetry-action@v1.2    
+    - name: clean build
       run: make clean build
